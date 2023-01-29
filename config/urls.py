@@ -18,6 +18,7 @@ urlpatterns = [
     path("users/", include("learn_gcal.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
     # Your stuff: custom urls includes go here
+    path("cals/", include("learn_gcal.cals.urls", namespace="cals")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # API URLS

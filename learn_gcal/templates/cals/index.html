@@ -1,0 +1,73 @@
+{% extends "../base.html" %}
+{% load socialaccount %}
+{% block content %}
+<h1>Index</h1>
+{{state}}
+
+{% if user.is_authenticated %}
+  <p>Welcome, {{ user.username }} !</p>
+  {% if user.google_credentials %}
+    <p>Google credentials: {{ user.google_credentials }}</p>
+  {% endif %}
+{% else %}
+    <h1>My Google Login Project</h1>
+    <a href="{% provider_login_url 'google' %}">Login with Google</a>
+{% endif %}
+
+Events:
+{% for event in events %}
+  <div class='mt-3 border border-danger'>
+    <div>
+      {% comment %} badges {% endcomment %}
+      {% comment %} options
+      <span class="badge bg-primary">Primary</span>
+      <span class="badge bg-secondary">Secondary</span>
+      <span class="badge bg-success">Success</span>
+      <span class="badge bg-danger">Danger</span>
+      <span class="badge bg-warning text-dark">Warning</span>
+      <span class="badge bg-info text-dark">Info</span>
+      <span class="badge bg-light text-dark">Light</span>
+      <span class="badge bg-dark">Dark</span> {% endcomment %}
+      {% if event.all_day_event %}
+        <span class="badge bg-primary"> All day event</span>
+      {% endif %}
+      {% if event.gmail_autocreated_event %}
+        <span class="badge bg-secondary"> Gmail Autocreated</span>
+      {% endif %}
+      {% if event.recurringEventId %}
+        <span class="badge bg-success"> Recurring </span>
+      {% endif %}
+      {% if not event.creator.self %}
+        <span class="badge bg-danger">invitee</span>
+      {% endif %}
+      {% if event.attendees %}
+        <span class="badge bg-warning">meeting with others</span>
+      {% endif %}
+    </div>
+    <div>
+      <div>
+        {{event.summary}}
+        <a href="{{event.htmlLink}}" target="_blank">(google cal)</a>
+        {% if event.hangoutLink %}
+          <a href="{{event.hangoutLink}}" target="_blank">(Hangout)</a>
+        {% endif %}
+      </div>
+      <div>
+        start: {{event.start_datetime_or_date}} end: {{event.end_datetime_or_date}}
+      </div>
+      <div>
+        start: {{event.start_datetime_or_date_readable}} end: {{event.end_datetime_or_date_readable}}
+      </div>
+    </div>
+    <div> {{event.description | safe | linebreaks}}</div>
+    <ul>
+    {% for attendee in event.attendees %}
+      <li>
+      {{attendee.email}} {{attendee.responseStatus}}
+      {% if attendee.organizer %} <span class="badge bg-primary">Organizer</span> {% endif %}
+      </li>
+    {% endfor %}
+    </ul>
+  </div>
+{% endfor %}
+{% endblock content %}

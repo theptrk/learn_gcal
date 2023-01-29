@@ -1,6 +1,7 @@
 {% extends "account/base.html" %}
 
 {% load i18n %}
+{% load account socialaccount %}
 {% load crispy_forms_tags %}
 
 {% block head_title %}{% translate "Signup" %}{% endblock %}
@@ -19,4 +20,13 @@
   <button class="btn btn-primary" type="submit">{% translate "Sign Up" %} &raquo;</button>
 </form>
 
+{% get_providers as socialaccount_providers %}
+
+{% if socialaccount_providers %}
+  <hr/>
+  {% comment %} log in with google {% endcomment %}
+  <a href="{% provider_login_url 'google' %}" class="btn btn-danger btn-block">
+  <i class="bi bi-google"></i> Sign up with Google
+  </a>
+{% endif %}
 {% endblock %}
