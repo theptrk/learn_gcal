@@ -41,8 +41,13 @@ Events:
         <span class="badge bg-danger">invitee</span>
       {% endif %}
       {% if event.attendees %}
-        <span class="badge bg-warning">meeting with others</span>
+        {% if event.attendees|length >= 2 %}
+          <span class="badge bg-warning">meeting with others</span>
+        {% else %}
+          <span class="badge bg-info">self invited meeting</span>
+        {% endif %}
       {% endif %}
+
     </div>
     <div>
       <div>

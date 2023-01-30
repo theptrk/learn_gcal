@@ -39,6 +39,8 @@ def get_events(creds):
             # creds.refresh(httplib2.Http())
             # https://stackoverflow.com/questions/29154374/how-can-i-refresh-a-stored-google-oauth-credential
             # https://google-auth.readthedocs.io/en/latest/reference/google.auth.transport.requests.html#google.auth.transport.requests.Request
+
+            # Does this work?
             request = google.auth.transport.requests.Request()
             creds.refresh(request)
             # TODO fix this when token is expired
@@ -119,6 +121,10 @@ def target_blank(value):
 
 def index(request):
     context = {"user": request.user, "events": [], "state": ""}
+
+    if not request.user.is_authenticated:
+        print("user is not authenticated")
+
     if request.user.is_authenticated:
         # request is the HttpRequest object
         token = None
@@ -140,8 +146,6 @@ def index(request):
             context["state"] += ", token is None"
         else:
             try:
-                print(token)
-
                 # TODO if token.expires_at is expired then refresh token
                 print("C")
                 credentials = Credentials(
@@ -151,15 +155,10 @@ def index(request):
                     client_id=env("GOOGLE_CLIENT_ID", default=""),
                     client_secret=env("GOOGLE_CLIENT_SECRET", default=""),
                 )
-
-                print(credentials)
-
                 events = get_events(credentials)
                 context["events"] = events
             except Exception as e:
                 print("getting events failed")
                 print(e)
-    else:
-        print("user is not authenticated")
 
     return render(request, "cals/index.html", context)
