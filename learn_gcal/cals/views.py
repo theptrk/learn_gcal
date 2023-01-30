@@ -1,9 +1,12 @@
+import zoneinfo
 from datetime import datetime
 
 import environ
 import google.auth.transport.requests
+import pytz
 from allauth.socialaccount.models import SocialToken
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -15,10 +18,20 @@ def get_events(creds):
     try:
         service = build("calendar", "v3", credentials=creds)
 
-        today = datetime.now().date()
-        midnight = datetime.combine(today, datetime.min.time())
-        iso_midnight = midnight.isoformat()
-        now = iso_midnight + "Z"  # 'Z' indicates UTC time
+        # today = datetime.now().date()
+        # midnight = datetime.combine(today, datetime.min.time())
+        # iso_midnight = midnight.isoformat()
+        # now = iso_midnight + "Z"  # 'Z' indicates UTC time
+
+        # TODO use user timezone
+        tz = pytz.timezone("America/Los_Angeles")
+        today = datetime.now(tz)
+        midnight_here = today.replace(hour=0, minute=0, second=0, microsecond=0)
+        midnight_utc = midnight_here.astimezone(pytz.utc)
+        # cant use isoformat() because it adds a +00:00
+        # ex: '2023-01-30T08:00:00+00:00Z'
+        # google expects: '2023-01-30T00:00:00Z'
+        timeMin = midnight_utc.strftime("%Y-%m-%dT%H:%M:%S") + "Z"
 
         print("Getting the upcoming 10 events")
         try:
@@ -26,16 +39,21 @@ def get_events(creds):
                 service.events()
                 .list(
                     calendarId="primary",
-                    timeMin=now,
-                    maxResults=20,
+                    timeMin=timeMin,
+                    maxResults=30,
                     singleEvents=True,
                     orderBy="startTime",
                 )
                 .execute()
             )
+
         except Exception as e:
             print("GOOGLE API ERROR")
             print(e)
+            if e.status_code == 403:
+                if e.reason == "Request had insufficient authentication scopes.":
+                    print("user needs to grant calendar scopes")
+
             # creds.refresh(httplib2.Http())
             # https://stackoverflow.com/questions/29154374/how-can-i-refresh-a-stored-google-oauth-credential
             # https://google-auth.readthedocs.io/en/latest/reference/google.auth.transport.requests.html#google.auth.transport.requests.Request
@@ -120,6 +138,9 @@ def target_blank(value):
 
 
 def index(request):
+    # TODO generalize timezones
+    timezone.activate(zoneinfo.ZoneInfo("America/Los_Angeles"))
+
     context = {"user": request.user, "events": [], "state": ""}
 
     if not request.user.is_authenticated:
