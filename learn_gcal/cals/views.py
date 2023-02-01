@@ -1,17 +1,16 @@
 import zoneinfo
 from datetime import datetime
 
-import environ
 import google.auth.transport.requests
 import pytz
 from allauth.socialaccount.models import SocialToken
 from django.shortcuts import redirect, render
 from django.utils import timezone
-from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-env = environ.Env()
+from learn_gcal.cals import NEED_REDIRECT_GOOGLE_AUTH
+from learn_gcal.cals.utils import get_google_credentials
 
 
 def get_events(creds):
@@ -53,18 +52,6 @@ def get_events(creds):
             if e.status_code == 403:
                 if e.reason == "Request had insufficient authentication scopes.":
                     print("user needs to grant calendar scopes")
-
-            # creds.refresh(httplib2.Http())
-            # https://stackoverflow.com/questions/29154374/how-can-i-refresh-a-stored-google-oauth-credential
-            # https://google-auth.readthedocs.io/en/latest/reference/google.auth.transport.requests.html#google.auth.transport.requests.Request
-
-            # Does this work?
-            request = google.auth.transport.requests.Request()
-            creds.refresh(request)
-            # TODO fix this when token is expired
-            # INFO 2023-01-15 23:56:00,153 google_auth_httplib2 77745 123145462980608 Refreshing credentials
-            # due to a 401 response. Attempt 1/2.
-            # print(events_result)
 
         events = events_result.get("items", [])
 
@@ -125,7 +112,7 @@ def get_events(creds):
         if error.reason == "Request had insufficient authentication scopes.":
             print("User needs to allow api scopes in the google authenications page")
             # TODO redirect to google relogin page
-            redirect("accounts:social:begin", "google")
+            return NEED_REDIRECT_GOOGLE_AUTH
     except Exception as e:
         print("some other error")
         print(e)
@@ -142,6 +129,7 @@ def index(request):
     timezone.activate(zoneinfo.ZoneInfo("America/Los_Angeles"))
 
     context = {"user": request.user, "events": [], "state": ""}
+    ReLogin = 0
 
     if not request.user.is_authenticated:
         print("user is not authenticated")
@@ -161,25 +149,31 @@ def index(request):
             # bug: if no social token you need to relogin with google
             print("no social token: SUPER BIG BUG")
             context["state"] += ", no social token"
-            print(e)
+            ReLogin = NEED_REDIRECT_GOOGLE_AUTH
 
         if token is None:
             context["state"] += ", token is None"
         else:
             try:
-                # TODO if token.expires_at is expired then refresh token
-                print("C")
-                credentials = Credentials(
-                    token=token.token,
-                    refresh_token=token.token_secret,
-                    token_uri="https://oauth2.googleapis.com/token",
-                    client_id=env("GOOGLE_CLIENT_ID", default=""),
-                    client_secret=env("GOOGLE_CLIENT_SECRET", default=""),
-                )
+                credentials = get_google_credentials(token)
+                if credentials is NEED_REDIRECT_GOOGLE_AUTH:
+                    raise Exception(NEED_REDIRECT_GOOGLE_AUTH)
+
                 events = get_events(credentials)
+                if events is NEED_REDIRECT_GOOGLE_AUTH:
+                    raise Exception(NEED_REDIRECT_GOOGLE_AUTH)
+
                 context["events"] = events
+
             except Exception as e:
+                if e is NEED_REDIRECT_GOOGLE_AUTH:
+                    ReLogin = NEED_REDIRECT_GOOGLE_AUTH
                 print("getting events failed")
                 print(e)
+
+    # RELODIN REDIRECT
+    # YOU NEED CHANGE THE URL TO YOUR REAL URL YOURSELF
+    if ReLogin is NEED_REDIRECT_GOOGLE_AUTH:
+        return redirect("accounts:social:begin", "google")
 
     return render(request, "cals/index.html", context)
