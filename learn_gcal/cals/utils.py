@@ -1,5 +1,4 @@
-from os import environ
-
+import environ
 from allauth.socialaccount.models import SocialToken
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
