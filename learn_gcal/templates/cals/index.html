@@ -14,66 +14,80 @@
     <a href="{% provider_login_url 'google' %}">Login with Google</a>
 {% endif %}
 
-Events:
-{% for event in events %}
-  <div class='mt-3 border border-danger'>
-    <div>
-      {% comment %} badges {% endcomment %}
-      {% comment %} options
-      <span class="badge bg-primary">Primary</span>
-      <span class="badge bg-secondary">Secondary</span>
-      <span class="badge bg-success">Success</span>
-      <span class="badge bg-danger">Danger</span>
-      <span class="badge bg-warning text-dark">Warning</span>
-      <span class="badge bg-info text-dark">Info</span>
-      <span class="badge bg-light text-dark">Light</span>
-      <span class="badge bg-dark">Dark</span> {% endcomment %}
-      {% if event.all_day_event %}
-        <span class="badge bg-primary"> All day event</span>
-      {% endif %}
-      {% if event.gmail_autocreated_event %}
-        <span class="badge bg-secondary"> Gmail Autocreated</span>
-      {% endif %}
-      {% if event.recurringEventId %}
-        <span class="badge bg-success"> Recurring </span>
-      {% endif %}
-      {% if not event.creator.self %}
-        <span class="badge bg-danger">invitee</span>
-      {% endif %}
-      {% if event.attendees %}
-        {% if event.attendees|length >= 2 %}
-          <span class="badge bg-warning">meeting with others</span>
-        {% else %}
-          <span class="badge bg-info">self invited meeting</span>
+<div class="events-container">
+  Events:
+  {% for event in events %}
+    <div class='event mt-3 border border-danger'>
+      <div class="badge-container">
+        {% comment %} badges {% endcomment %}
+        {% comment %} options
+        <span class="badge bg-primary">Primary</span>
+        <span class="badge bg-secondary">Secondary</span>
+        <span class="badge bg-success">Success</span>
+        <span class="badge bg-danger">Danger</span>
+        <span class="badge bg-warning text-dark">Warning</span>
+        <span class="badge bg-info text-dark">Info</span>
+        <span class="badge bg-light text-dark">Light</span>
+        <span class="badge bg-dark">Dark</span> {% endcomment %}
+        {% if event.all_day_event %}
+          <span class="badge bg-primary"> All day event</span>
         {% endif %}
-      {% endif %}
+        {% if event.gmail_autocreated_event %}
+          <span class="badge bg-secondary"> Gmail Autocreated</span>
+        {% endif %}
+        {% if event.recurringEventId %}
+          <span class="badge bg-success"> Recurring </span>
+        {% endif %}
+        {% if not event.creator.self %}
+          <span class="badge bg-danger">invitee</span>
+        {% endif %}
+        {% if event.attendees %}
+          {% if event.attendees|length >= 2 %}
+            <span class="badge bg-warning">meeting with others</span>
+          {% else %}
+            <span class="badge bg-info">self invited meeting</span>
+          {% endif %}
+        {% endif %}
 
-    </div>
-    <div>
-      <div>
-        {{event.summary}}
-        <a href="{{event.htmlLink}}" target="_blank">(google cal)</a>
-        {% if event.hangoutLink %}
-          <a href="{{event.hangoutLink}}" target="_blank">(Hangout)</a>
+      </div>
+      <div class="event-main">
+        <div class="event-summary">
+          {{event.summary}}
+          <a href="{{event.htmlLink}}" target="_blank">(google cal)</a>
+          {% if event.hangoutLink %}
+            <a href="{{event.hangoutLink}}" target="_blank">(Hangout)</a>
+          {% endif %}
+        </div>
+        {% comment %} <div>
+          start: {{event.start_datetime_or_date}} end: {{event.end_datetime_or_date}}
+        </div> {% endcomment %}
+        <div>
+          <span class="text-secondary">Start:</span>{{event.start_datetime_or_date_readable}}
+          <span class="text-secondary">End:</span>{{event.end_datetime_or_date_readable}}
+        </div>
+      </div>
+      <div class="event-details">
+        {% comment %} <div> {{event.description | safe | linebreaks}}</div> {% endcomment %}
+        {% if event.text_description %}
+          <div>
+            <span class="text-secondary">Description:</span> {{event.text_description|truncatechars:45}}
+          </div>
+        {% endif %}
+        {% if event.attendees %}
+          <div class="attendees-container">
+            <span class="text-secondary">Attendees:</span>
+            <ul>
+            {% for attendee in event.attendees %}
+              <li>
+              {{attendee.email}} {{attendee.responseStatus}}
+              {% if attendee.organizer %} <span class="badge bg-primary">Organizer</span> {% endif %}
+              </li>
+            {% endfor %}
+            </ul>
+          </div>
         {% endif %}
       </div>
-      {% comment %} <div>
-        start: {{event.start_datetime_or_date}} end: {{event.end_datetime_or_date}}
-      </div> {% endcomment %}
-      <div>
-        start: {{event.start_datetime_or_date_readable}} end: {{event.end_datetime_or_date_readable}}
-      </div>
     </div>
-    {% comment %} <div> {{event.description | safe | linebreaks}}</div> {% endcomment %}
-    <div> {{event.description|safe|truncatechars:45}}</div>
-    <ul>
-    {% for attendee in event.attendees %}
-      <li>
-      {{attendee.email}} {{attendee.responseStatus}}
-      {% if attendee.organizer %} <span class="badge bg-primary">Organizer</span> {% endif %}
-      </li>
-    {% endfor %}
-    </ul>
-  </div>
-{% endfor %}
+  {% endfor %}
+</div>
 {% endblock content %}

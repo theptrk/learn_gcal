@@ -1,3 +1,4 @@
+import re
 import zoneinfo
 from datetime import datetime
 
@@ -9,6 +10,11 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 from learn_gcal.cals.utils import get_google_credentials
+
+
+def remove_html_tags(text):
+    clean = re.compile("<.*?>")
+    return re.sub(clean, "", text)
 
 
 def parse_events(events):
@@ -46,6 +52,7 @@ def parse_events(events):
         old_description = event.get("description", "")
         new_description = target_blank(old_description)
         event["description"] = new_description
+        event["text_description"] = remove_html_tags(new_description)
 
         description = event.get("description", "")
         if "This event was created from an email you received in Gmail" in description:
@@ -114,13 +121,6 @@ def target_blank(value):
     return value.replace("<a ", '<a target="_blank" ')
 
 
-def safe_get(model, **kwargs):
-    try:
-        return model.objects.get(**kwargs)
-    except model.DoesNotExist:
-        return None
-
-
 def index(request):
     # TODO generalize timezones
     timezone.activate(zoneinfo.ZoneInfo("America/Los_Angeles"))
@@ -135,10 +135,11 @@ def index(request):
 
     if request.user.is_authenticated:
         # request is the HttpRequest object
-        token = safe_get(
-            SocialToken, account__user=request.user, account__provider="google"
-        )
-        if token is None:
+        try:
+            token = SocialToken.objects.get(
+                account__user=request.user, account__provider="google"
+            )
+        except SocialToken.DoesNotExist:
             # todo redirect to login again?
             # bug: if no social token you need to relogin with google
             print("no social token: SUPER BIG BUG")
