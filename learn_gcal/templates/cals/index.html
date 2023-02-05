@@ -57,14 +57,15 @@ Events:
           <a href="{{event.hangoutLink}}" target="_blank">(Hangout)</a>
         {% endif %}
       </div>
-      <div>
+      {% comment %} <div>
         start: {{event.start_datetime_or_date}} end: {{event.end_datetime_or_date}}
-      </div>
+      </div> {% endcomment %}
       <div>
         start: {{event.start_datetime_or_date_readable}} end: {{event.end_datetime_or_date_readable}}
       </div>
     </div>
-    <div> {{event.description | safe | linebreaks}}</div>
+    {% comment %} <div> {{event.description | safe | linebreaks}}</div> {% endcomment %}
+    <div> {{event.description|safe|truncatechars:45}}</div>
     <ul>
     {% for attendee in event.attendees %}
       <li>
