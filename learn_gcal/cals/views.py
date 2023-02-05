@@ -134,7 +134,8 @@ def index(request):
         print("user is not authenticated")
 
     if request.user.is_authenticated:
-        # request is the HttpRequest object
+
+        # Try getting social token, return early if it doesnt exist
         try:
             token = SocialToken.objects.get(
                 account__user=request.user, account__provider="google"
@@ -144,12 +145,14 @@ def index(request):
             # bug: if no social token you need to relogin with google
             print("no social token: SUPER BIG BUG")
             context["state"] += ", no social token"
+            return render(request, "cals/index.html", context)
 
+        # Try getting google credentials, return early if it doesnt exist
         google_credentials = get_google_credentials(token)
-
         if google_credentials is None:
             print("token existed but INVALID and couldnt refresh")
             context["state"] += ", no social token"
+            return render(request, "cals/index.html", context)
 
         events = get_events(google_credentials)
         if events is None:
